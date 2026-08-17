@@ -5,6 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.8+](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![Tests](https://img.shields.io/badge/tests-12%2F12%20passing-brightgreen.svg)](tests/)
+[![CI](https://github.com/yaowanxiang/model-router/actions/workflows/ci.yml/badge.svg)](https://github.com/yaowanxiang/model-router/actions)
 
 ## 🎯 Why Model Router?
 
