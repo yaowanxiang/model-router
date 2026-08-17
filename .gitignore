@@ -1,0 +1,24 @@
+# Secrets — never commit real keys
+config.json
+*.key
+*.bin
+aes_key.bin
+dpapi_key.bin
+secret_blob.bin
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Runtime
+tasks/
+*.result.json
+test_image.png
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

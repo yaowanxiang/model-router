@@ -1,0 +1,85 @@
+{
+  "providers": {
+    "zhipu": {
+      "name": "Zhipu AI (Free)",
+      "base_url": "https://open.bigmodel.cn/api/paas/v4",
+      "api_key": "YOUR_ZHIPU_API_KEY",
+      "tier": "free"
+    },
+    "siliconflow": {
+      "name": "SiliconFlow (Free)",
+      "base_url": "https://api.siliconflow.cn/v1",
+      "api_key": "YOUR_SILICONFLOW_API_KEY",
+      "tier": "free"
+    },
+    "openrouter": {
+      "name": "OpenRouter (Free models)",
+      "base_url": "https://openrouter.ai/api/v1",
+      "api_key": "YOUR_OPENROUTER_API_KEY",
+      "tier": "free"
+    },
+    "deepseek": {
+      "name": "DeepSeek (Paid fallback)",
+      "base_url": "https://api.deepseek.com/v1",
+      "api_key": "YOUR_DEEPSEEK_API_KEY",
+      "tier": "paid"
+    },
+    "qwen": {
+      "name": "Alibaba Qwen (Multimodal)",
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "api_key": "YOUR_DASHSCOPE_API_KEY",
+      "tier": "paid"
+    },
+    "glm": {
+      "name": "Zhipu GLM (Chinese)",
+      "base_url": "https://open.bigmodel.cn/api/paas/v4",
+      "api_key": "YOUR_GLM_API_KEY",
+      "tier": "paid"
+    },
+    "kimi": {
+      "name": "Moonshot Kimi (Long context)",
+      "base_url": "https://api.moonshot.cn/v1",
+      "api_key": "YOUR_KIMI_API_KEY",
+      "tier": "paid"
+    }
+  },
+  "routing": {
+    "vision": {
+      "candidates": [
+        {"provider": "siliconflow", "model": "Qwen/Qwen3-VL-8B-Instruct"},
+        {"provider": "qwen", "model": "qwen-vl-max"}
+      ]
+    },
+    "long": {
+      "candidates": [
+        {"provider": "siliconflow", "model": "Qwen/Qwen2.5-72B-Instruct-128K"},
+        {"provider": "kimi", "model": "kimi-k2.7-code"}
+      ]
+    },
+    "complex": {
+      "candidates": [
+        {"provider": "siliconflow", "model": "deepseek-ai/DeepSeek-V3.2"},
+        {"provider": "deepseek", "model": "deepseek-v4-pro"}
+      ]
+    },
+    "medium": {
+      "candidates": [
+        {"provider": "siliconflow", "model": "Qwen/Qwen3-32B"},
+        {"provider": "glm", "model": "glm-5.2"}
+      ]
+    },
+    "simple": {
+      "candidates": [
+        {"provider": "openrouter", "model": "openai/gpt-oss-20b:free"},
+        {"provider": "siliconflow", "model": "Qwen/Qwen3-8B"}
+      ]
+    }
+  },
+  "levels": {
+    "vision": "Vision tasks (images/screenshots/OCR)",
+    "long": "Long context (>2000 chars / full documents)",
+    "complex": "Complex tasks (analysis/code/reasoning/papers/stats)",
+    "medium": "Medium tasks (writing/translation/polish)",
+    "simple": "Simple tasks (daily chat/quick queries)"
+  }
+}
