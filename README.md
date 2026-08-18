@@ -7,6 +7,19 @@
 [![Tests](https://img.shields.io/badge/tests-12%2F12%20passing-brightgreen.svg)](tests/)
 [![CI](https://github.com/yaowanxiang/model-router/actions/workflows/ci.yml/badge.svg)](https://github.com/yaowanxiang/model-router/actions)
 
+[![Release](https://img.shields.io/badge/Release-v1.2.0-blue.svg)](https://github.com/yaowanxiang/model-router/releases)
+
+## 📥 立即下载（三平台安装包，双击即用）
+
+| 平台 | 轻量版（快速问答） | 完整版（含路由分析/统计） |
+|------|-------------------|--------------------------|
+| 🪟 **Windows** | [⬇️ Model-Router-Windows.exe](https://github.com/yaowanxiang/model-router/releases/download/v1.2.0/Model-Router.exe) (11.9MB) | [⬇️ ModelRouter-Windows-x64.exe](https://github.com/yaowanxiang/model-router/releases/download/v1.2.0/ModelRouter-Windows-x64.exe) (18MB) |
+| 🍎 **macOS** | [⬇️ Model-Router-macOS](https://github.com/yaowanxiang/model-router/releases/download/v1.2.0/Model-Router) (10.4MB) | [⬇️ ModelRouter-macOS.app](https://github.com/yaowanxiang/model-router/releases/download/v1.2.0/ModelRouter) (15.4MB) |
+| 🐧 **Linux** | [⬇️ Model-Router-Linux.AppImage](https://github.com/yaowanxiang/model-router/releases/download/v1.2.0/Model-Router.AppImage) (25.3MB) | [⬇️ ModelRouter-Linux-x86_64.AppImage](https://github.com/yaowanxiang/model-router/releases/download/v1.2.0/ModelRouter-Linux-x86_64.AppImage) (28MB) |
+
+> 💡 **轻量版** = tkinter 纯标准库（零依赖，启动最快） · **完整版** = pywebview 现代界面（含路由分析/历史统计/成本显示）
+> 🔗 全部版本：[Releases 页面](https://github.com/yaowanxiang/model-router/releases)
+
 ## English Introduction
 
 ### What it is
