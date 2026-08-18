@@ -1,0 +1,89 @@
+name: Build Installers
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: Model-Router.exe
+            asset_name: Model-Router-Windows.exe
+          - os: macos-latest
+            artifact: Model-Router
+            asset_name: Model-Router-macOS
+          - os: ubuntu-latest
+            artifact: Model-Router.AppImage
+            asset_name: Model-Router-Linux.AppImage
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller requests
+
+    - name: Build GUI (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        python -m PyInstaller --onefile --windowed `
+          --name "Model-Router" `
+          --hidden-import=router_core `
+          --hidden-import=auto_router `
+          --add-data "router_core.py;." `
+          --add-data "auto_router.py;." `
+          --add-data "config.example.json;." `
+          gui_app.py
+
+    - name: Build GUI (macOS/Linux)
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        python -m PyInstaller --onefile --windowed \
+          --name "Model-Router" \
+          --hidden-import=router_core \
+          --hidden-import=auto_router \
+          --add-data "router_core.py:." \
+          --add-data "auto_router.py:." \
+          --add-data "config.example.json:." \
+          gui_app.py
+
+    - name: Prepare Linux artifact
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        cd dist
+        chmod +x Model-Router
+        mv Model-Router Model-Router.AppImage
+
+    - name: List artifacts
+      shell: bash
+      run: ls -la dist/
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.asset_name }}
+        path: dist/${{ matrix.artifact }}
+        if-no-files-found: error
+
+    - name: Attach to Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/${{ matrix.artifact }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
