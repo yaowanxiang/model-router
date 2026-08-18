@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# model-router 桌面客户端跨平台打包脚本
+# Windows → dist/ModelRouter-Windows-x64.exe
+# macOS   → dist/ModelRouter-macOS.app
+# Linux   → dist/ModelRouter-Linux-x86_64.AppImage
+set -e
+cd "$(dirname "$0")/.."
+
+APP_NAME="ModelRouter"
+ENTRY="desktop/desktop.py"
+
+echo "📦 $APP_NAME 桌面客户端打包开始..."
+
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)  PLATFORM="windows" ;;
+  Darwin*)               PLATFORM="macos" ;;
+  Linux*)                PLATFORM="linux" ;;
+  *) echo "❌ 未知平台: $(uname -s)"; exit 1 ;;
+esac
+echo "🎯 平台: $PLATFORM"
+
+# 依赖
+python -c "import pywebview" 2>/dev/null || pip install pywebview
+python -c "import PyInstaller" 2>/dev/null || pip install pyinstaller
+python -c "import fastapi, uvicorn" 2>/dev/null || pip install fastapi uvicorn
+
+# 打包：desktop/web 前端 + 核心引擎 router_core
+python -m PyInstaller --noconfirm --onefile --windowed --name "$APP_NAME" \
+  --collect-all pywebview \
+  --hidden-import uvicorn.logging \
+  --hidden-import uvicorn.loops.auto \
+  --hidden-import uvicorn.protocols.http.auto \
+  --hidden-import uvicorn.protocols.websockets.auto \
+  --hidden-import uvicorn.lifespan.on \
+  --add-data "desktop/web:web" \
+  --add-data "router_core.py:." \
+  --add-data "config.example.json:." \
+  "$ENTRY"
+
+case "$PLATFORM" in
+  windows)
+    mv -f "dist/$APP_NAME.exe" "dist/$APP_NAME-Windows-x64.exe"
+    echo "✅ Windows 安装包: dist/$APP_NAME-Windows-x64.exe"
+    ;;
+  macos)
+    mv -f "dist/$APP_NAME.app" "dist/$APP_NAME-macOS.app"
+    echo "✅ macOS 安装包: dist/$APP_NAME-macOS.app"
+    ;;
+  linux)
+    APPTOOL="appimagetool-x86_64.AppImage"
+    if [ ! -f "$APPTOOL" ]; then
+      wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/$APPTOOL" || true
+      chmod +x "$APPTOOL" 2>/dev/null || true
+    fi
+    if [ -x "$APPTOOL" ]; then
+      ./"$APPTOOL" "dist/$APP_NAME/" "dist/$APP_NAME-Linux-x86_64.AppImage"
+      echo "✅ Linux 安装包: dist/$APP_NAME-Linux-x86_64.AppImage"
+    else
+      echo "⚠️ appimagetool 不可用,已保留 AppDir"
+    fi
+    ;;
+esac
+echo "📤 上传: gh release upload <tag> dist/*"

@@ -1,0 +1,72 @@
+name: Build Desktop Apps
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: ModelRouter-Windows-x64.exe
+          - os: macos-latest
+            artifact: ModelRouter-macOS.app
+          - os: ubuntu-latest
+            artifact: ModelRouter-Linux-x86_64.AppImage
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install pywebview fastapi uvicorn pyinstaller requests
+
+      - name: Install Linux webkit deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-gi gir1.2-webkit2-4.1 gir1.2-gtk-3.0
+
+      - name: Build Windows app
+        if: runner.os == 'Windows'
+        shell: bash
+        run: bash scripts/build_client.sh
+
+      - name: Build macOS app
+        if: runner.os == 'macOS'
+        run: bash scripts/build_client.sh
+
+      - name: Build Linux AppImage
+        if: runner.os == 'Linux'
+        run: bash scripts/build_client.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

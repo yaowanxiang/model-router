@@ -1,0 +1,7 @@
+# -*- coding: utf-8 -*-
+"""desktop 依赖清单"""
+pywebview>=4.4
+fastapi>=0.110
+uvicorn>=0.29
+pyinstaller>=6.0
+requests>=2.25

@@ -23,3 +23,8 @@ Thumbs.db
 # Logs
 *.log
 _ci_payload.json
+
+# Build artifacts
+dist/
+build/
+*.spec

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Model Router</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; background: #f0f2f5; color: #1a1a2e; }
+  .header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; padding: 18px 28px; display: flex; align-items: center; gap: 14px; }
+  .header h1 { font-size: 20px; font-weight: 600; }
+  .header .sub { font-size: 12px; opacity: .7; }
+  .container { max-width: 1100px; margin: 20px auto; padding: 0 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .card h3 { font-size: 15px; margin-bottom: 14px; color: #16213e; display: flex; align-items: center; gap: 8px; }
+  .card.full { grid-column: 1 / -1; }
+  label { display: block; font-size: 13px; color: #555; margin: 10px 0 4px; }
+  textarea, input[type=text] { width: 100%; padding: 10px 12px; border: 1px solid #d0d5dd; border-radius: 8px; font-size: 14px; font-family: inherit; resize: vertical; }
+  textarea:focus, input:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+  .btn { background: #4f46e5; color: #fff; border: none; padding: 10px 22px; border-radius: 8px; font-size: 14px; cursor: pointer; margin-top: 14px; transition: background .2s; }
+  .btn:hover { background: #4338ca; }
+  .btn.secondary { background: #e5e7eb; color: #1a1a2e; margin-left: 8px; }
+  .btn.secondary:hover { background: #d1d5db; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 2px 4px 2px 0; }
+  .b-free { background: #dcfce7; color: #166534; }
+  .b-paid { background: #fef3c7; color: #92400e; }
+  .b-level { background: #dbeafe; color: #1e40af; }
+  .b-ok { background: #dcfce7; color: #166534; }
+  .b-err { background: #fee2e2; color: #991b1b; }
+  .result-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-top: 10px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow-y: auto; }
+  .chain-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; margin: 6px 0; font-size: 13px; }
+  .chain-item .idx { width: 24px; height: 24px; border-radius: 50%; background: #eef2ff; color: #4f46e5; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
+  .hint { font-size: 12px; color: #6b7280; margin-top: 4px; }
+  .status-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #16213e; color: #cbd5e1; font-size: 12px; padding: 8px 24px; display: flex; gap: 20px; }
+  .tab { display: flex; gap: 4px; margin-bottom: 14px; }
+  .tab button { background: #f1f5f9; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  .tab button.active { background: #4f46e5; color: #fff; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>⚡ Model Router</h1>
+    <div class="sub">免费优先 + 付费兜底 · 五级任务自动路由</div>
+  </div>
+</div>
+
+<div class="container">
+  <!-- 路由分析卡片 -->
+  <div class="card">
+    <h3>🎯 路由分析</h3>
+    <label>任务描述</label>
+    <textarea id="task-desc" rows="3" placeholder="例：分析这份气象数据 / 翻译以下段落 / 看这张图片"></textarea>
+    <label>内容长度（字符，自动估算）</label>
+    <input type="text" id="content-len" value="0">
+    <label><input type="checkbox" id="has-image" style="width:auto"> 任务包含图片/截图</label>
+    <button class="btn" onclick="doAnalyze()">🔍 分析路由</button>
+    <div class="hint">零成本，不调用模型，仅显示路由决策</div>
+    <div class="result-box" id="analyze-result">点击"分析路由"查看五级分类与候选链…</div>
+  </div>
+
+  <!-- 模型调用卡片 -->
+  <div class="card">
+    <h3>📞 自动调用</h3>
+    <label>任务内容（正文）</label>
+    <textarea id="call-content" rows="3" placeholder="可选，为空时用任务描述作为消息"></textarea>
+    <label>系统提示词</label>
+    <input type="text" id="call-system" placeholder="可选，如：你是一名气象数据分析师">
+    <label>最大输出 tokens</label>
+    <input type="text" id="call-max-tokens" value="2048">
+    <button class="btn" onclick="doCall()">🚀 路由并调用</button>
+    <button class="btn secondary" onclick="clearResult('call-result')">清空</button>
+    <div class="hint">免费 provider 优先，失败自动回退付费</div>
+    <div class="result-box" id="call-result">点击"路由并调用"执行…</div>
+  </div>
+
+  <!-- 配置查看（全宽） -->
+  <div class="card full">
+    <div class="tab">
+      <button class="active" onclick="switchTab('config', this)">⚙️ 配置查看</button>
+      <button onclick="switchTab('about', this)">📖 关于</button>
+    </div>
+    <div id="panel-config" class="panel active">
+      <h3>已配置 Providers（密钥已脱敏）</h3>
+      <div class="result-box" id="config-result" style="max-height:400px">加载中…</div>
+    </div>
+    <div id="panel-about" class="panel">
+      <h3>📖 关于 Model Router</h3>
+      <div class="result-box">
+<b>Model Router</b> — 成本感知的多模型路由框架。
+
+核心特性：
+• 五级任务分类（vision / long / complex / medium / simple）
+• 免费优先 + 付费兜底回退链
+• 零成本路由决策（关键词 + 长度启发式）
+• 支持视觉任务（图片/截图/OCR）
+• Python API / CLI / MCP / 桌面客户端
+
+配置说明：
+• 编辑 config.json 添加或修改 provider
+• 每个路由级别定义候选链，免费在前付费在后
+• 详细文档见 README.md 与 docs/DESIGN.md
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span id="status-api">API: 连接中…</span>
+  <span id="status-config">配置: —</span>
+</div>
+
+<script>
+async function api(url, method='GET', body=null) {
+  const opt = { method, headers: {'Content-Type': 'application/json'} };
+  if (body) opt.body = JSON.stringify(body);
+  const r = await fetch(url, opt);
+  return r.json();
+}
+
+async function init() {
+  try {
+    await api('/api/health');
+    document.getElementById('status-api').textContent = 'API: ✅ 已连接';
+    loadConfig();
+  } catch (e) {
+    document.getElementById('status-api').textContent = 'API: ❌ 连接失败';
+  }
+}
+
+async function loadConfig() {
+  try {
+    const d = await api('/api/config');
+    if (d.error) { document.getElementById('config-result').textContent = '⚠️ ' + d.error; return; }
+    const provs = Object.entries(d.providers || {}).map(([slug, p]) =>
+      `• ${slug} — ${p.name} [${p.tier}] ${p.enabled === false ? '(已禁用)' : ''} → ${p.base_url}`
+    ).join('\n');
+    const routing = Object.entries(d.routing || {}).map(([lvl, r]) => {
+      const chain = (r.candidates || []).map(c => `${c.provider}/${c.model}`).join(' → ');
+      return `[${lvl}] ${chain}`;
+    }).join('\n');
+    document.getElementById('config-result').textContent =
+      `【Providers】\n${provs}\n\n【路由链】\n${routing}`;
+    document.getElementById('status-config').textContent = `配置: ✅ ${Object.keys(d.providers||{}).length} providers`;
+  } catch (e) {
+    document.getElementById('config-result').textContent = '⚠️ 加载失败: ' + e.message;
+  }
+}
+
+async function doAnalyze() {
+  const box = document.getElementById('analyze-result');
+  box.textContent = '分析中…';
+  const body = {
+    task_desc: document.getElementById('task-desc').value,
+    content_len: parseInt(document.getElementById('content-len').value) || 0,
+    has_image: document.getElementById('has-image').checked,
+  };
+  const d = await api('/api/analyze', 'POST', body);
+  if (d.error) { box.textContent = '⚠️ ' + d.error; return; }
+  let out = `📌 路由级别: [${d.level}] ${d.level_desc || ''}\n`;
+  out += `🎯 首选: ${d.primary.provider}/${d.primary.model} (${d.primary.tier})\n\n候选链:\n`;
+  d.candidates.forEach((c, i) => {
+    out += `  ${i+1}. ${c.provider}/${c.model} [${c.tier}] ${c.provider_name}\n`;
+  });
+  box.textContent = out;
+}
+
+async function doCall() {
+  const box = document.getElementById('call-result');
+  box.textContent = '调用中…（免费优先，失败自动回退）';
+  const body = {
+    task_desc: document.getElementById('task-desc').value,
+    content: document.getElementById('call-content').value,
+    system: document.getElementById('call-system').value || null,
+    max_tokens: parseInt(document.getElementById('call-max-tokens').value) || 2048,
+    has_image: document.getElementById('has-image').checked,
+  };
+  const d = await api('/api/call', 'POST', body);
+  if (d.error) { box.textContent = '⚠️ ' + d.error; return; }
+  let out = `✅ 完成: [${d.level}] ${d.provider}/${d.model}\n`;
+  out += `💳 等级: ${d.tier} ${d.fallback_used ? '(发生过回退)' : ''} | 尝试: ${d.attempts} 次 | 耗时: ${d.elapsed_sec}s\n`;
+  out += `📊 tokens: ${JSON.stringify(d.usage || {})}\n\n`;
+  out += `──── 输出 ────\n${d.content}\n`;
+  if (d.errors && d.errors.length) {
+    out += `\n──── 失败记录 ────\n${d.errors.map(e => `• ${e.provider}/${e.model}: ${e.error}`).join('\n')}`;
+  }
+  box.textContent = out;
+}
+
+function clearResult(id) { document.getElementById(id).textContent = ''; }
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+init();
+</script>
+</body>
+</html>

@@ -53,7 +53,25 @@ python gui_app.py        # launch the GUI
 python auto_router.py    # or use the CLI
 ```
 
-### Quick Start
+## 🖥 Desktop App (Windows / macOS / Linux)
+
+Download the installer for your platform from [Releases](https://github.com/yaowanxiang/model-router/releases):
+
+| Platform | Installer |
+|----------|-----------|
+| Windows | `ModelRouter-Windows-x64.exe` (double-click to run) |
+| macOS | `ModelRouter-macOS.app` (drag to Applications) |
+| Linux | `ModelRouter-Linux-x86_64.AppImage` (chmod +x, run) |
+
+**Features**: route analysis (zero-cost) · auto call with free-first fallback · provider config viewer (keys masked) · no terminal needed.
+
+```bash
+# Build locally (requires Python 3.8+)
+pip install -r requirements-desktop.txt
+bash scripts/build_client.sh        # auto-detects platform
+```
+
+## 🚀 Quick Start
 
 ```bash
 # 1. Install (only requests is required)
