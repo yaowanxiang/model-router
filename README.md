@@ -7,6 +7,31 @@
 [![Tests](https://img.shields.io/badge/tests-12%2F12%20passing-brightgreen.svg)](tests/)
 [![CI](https://github.com/yaowanxiang/model-router/actions/workflows/ci.yml/badge.svg)](https://github.com/yaowanxiang/model-router/actions)
 
+## 💻 图形化客户端（傻瓜式，拿来就用）
+
+**无需编程，下载安装包双击即用：**
+
+| 平台 | 下载 |
+|------|------|
+| 🪟 Windows | `Model-Router-Windows.exe` (下载即运行) |
+| 🍎 macOS | `Model-Router-macOS` (App) |
+| 🐧 Linux | `Model-Router-Linux.AppImage` |
+
+**界面功能：**
+- 🎯 输入问题 → 自动识别任务难度 → 自动选择最优免费模型
+- 🧭 实时显示路由信息（哪个模型在回答）
+- 💬 深色专业主题，对话式界面
+- ⚙️ 可设置角色提示词
+
+> 专业的路由逻辑全部在后台自动完成，用户只需**输入问题、点击回答**。
+
+### 开发者模式
+```bash
+pip install -r requirements.txt
+python gui_app.py        # 启动图形界面
+python auto_router.py    # 或命令行
+```
+
 ## 🎯 Why Model Router?
 
 Most LLM integration code hard-codes a single model or uses a single API provider. This means:
