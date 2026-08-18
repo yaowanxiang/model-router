@@ -50,7 +50,12 @@ case "$PLATFORM" in
     echo "✅ Windows 安装包: dist/$APP_NAME-Windows-x64.exe"
     ;;
   macos)
-    mv -f "dist/$APP_NAME.app" "dist/$APP_NAME-macOS.app"
+    # PyInstaller onefile 在 macOS 生成 .app bundle
+    if [ -d "dist/$APP_NAME.app" ]; then
+      mv -f "dist/$APP_NAME.app" "dist/$APP_NAME-macOS.app"
+    else
+      mv -f "dist/$APP_NAME" "dist/$APP_NAME-macOS" 2>/dev/null || true
+    fi
     echo "✅ macOS 安装包: dist/$APP_NAME-macOS.app"
     ;;
   linux)
