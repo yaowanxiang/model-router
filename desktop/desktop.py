@@ -37,6 +37,18 @@ def _run_api(port: int) -> None:
     from fastapi.staticfiles import StaticFiles
     from api import build_app
 
+    # 打包环境: config.json 使用用户可写目录，避免写入只读 _MEIPASS
+    if FROZEN:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        cfg_file = DATA_DIR / "config.json"
+        if not cfg_file.exists():
+            example = Path(sys._MEIPASS) / "config.example.json"
+            if example.exists():
+                import shutil
+                shutil.copy(example, cfg_file)
+        import router_core
+        router_core.CONFIG_PATH = str(cfg_file)
+
     app = build_app(BASE_DIR)
     # 移除根路由避免抢占 StaticFiles
     app.routes[:] = [r for r in app.routes
