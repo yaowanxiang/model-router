@@ -50,7 +50,7 @@ def build():
         "--hidden-import=router_core",
         "--hidden-import=auto_router",
         *add_data_args(),
-        str(ROOT / "gui_app.py"),
+        str(ROOT / "desktop" / "desktop.py"),
     ]
     print("构建中...")
     subprocess.run(cmd, cwd=str(ROOT), check=True)
