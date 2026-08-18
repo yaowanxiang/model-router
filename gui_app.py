@@ -6,6 +6,7 @@ Model Router 图形化客户端 - 傻瓜式AI模型路由问答工具
 import os
 import sys
 import json
+import time
 import threading
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
@@ -19,10 +20,18 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+FROZEN = bool(getattr(sys, "frozen", False))
+if FROZEN:
+    BASE_DIR = Path(sys._MEIPASS)
+    DATA_DIR = Path.home() / ".model-router"
+else:
+    BASE_DIR = Path(__file__).resolve().parent
+    DATA_DIR = BASE_DIR / "data"
+
 # 导入路由核心
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(BASE_DIR))
 try:
-    from router_core import route_and_call, analyze_task
+    from router_core import route_and_call, analyze_task, classify_task
     ROUTER_OK = True
 except Exception as e:
     ROUTER_OK = False
@@ -32,18 +41,25 @@ except Exception as e:
 class RouterApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("🤖 AI模型路由器 v1.0.0 - 免费优先·自动选路")
-        self.root.geometry("860x720")
-        self.root.minsize(760, 620)
+        self.root.title("🤖 AI模型路由器 v2.0 - 免费优先·自动选路")
+        self.root.geometry("920x760")
+        self.root.minsize(800, 640)
 
         # 主题
         self.bg = "#0f172a"
         self.bg2 = "#1e293b"
+        self.bg3 = "#0b1220"
         self.fg = "#f8fafc"
         self.accent = "#38bdf8"
         self.green = "#10b981"
         self.purple = "#a78bfa"
+        self.orange = "#f59e0b"
+        self.red = "#ef4444"
         self.root.configure(bg=self.bg)
+
+        # 历史与统计
+        self.history = []          # [(时间, 问题, 路由, tier)]
+        self.stats = {"free": 0, "paid": 0, "total": 0}
 
         self._build_header()
         self._build_task_panel()
@@ -101,6 +117,12 @@ class RouterApp:
                                   font=("Microsoft YaHei", 13, "bold"),
                                   relief=tk.FLAT, padx=30, pady=8, cursor="hand2")
         self.send_btn.pack(side=tk.LEFT)
+        tk.Button(p, text="🧭 路由分析(零成本)", command=self._analyze_route,
+                  bg=self.accent, fg="#0f172a", font=("Microsoft YaHei", 11, "bold"),
+                  relief=tk.FLAT, padx=16, pady=8, cursor="hand2").pack(side=tk.LEFT, padx=8)
+        tk.Button(p, text="📊 历史统计", command=self._show_stats,
+                  bg=self.purple, fg="white", font=("Microsoft YaHei", 11, "bold"),
+                  relief=tk.FLAT, padx=16, pady=8, cursor="hand2").pack(side=tk.LEFT, padx=8)
         tk.Button(p, text="🧹 清空", command=self._clear,
                   bg=self.bg2, fg=self.fg, font=("Microsoft YaHei", 11),
                   relief=tk.FLAT, padx=20, pady=8, cursor="hand2").pack(side=tk.LEFT, padx=10)
@@ -152,13 +174,81 @@ class RouterApp:
         # 显示路由信息
         model = result.get("model", "未知") if isinstance(result, dict) else "未知"
         provider = result.get("provider", "") if isinstance(result, dict) else ""
-        self.result_text.insert(tk.END, f"🧭 路由: {provider} / {model}\n\n", "route")
+        tier = result.get("tier", "") if isinstance(result, dict) else ""
+        level = result.get("level", "") if isinstance(result, dict) else ""
+        fallback = result.get("fallback_used", False) if isinstance(result, dict) else False
+        elapsed = result.get("elapsed_sec", 0) if isinstance(result, dict) else 0
+        tier_tag = "✅ 免费" if tier == "free" else ("⚠️ 付费" if tier == "paid" else tier)
+        fb_tag = " (发生过回退)" if fallback else ""
+        self.result_text.insert(
+            tk.END,
+            f"🧭 路由: [{level}] {provider} / {model}\n"
+            f"💳 等级: {tier_tag}{fb_tag} | 耗时: {elapsed}s\n\n",
+            "route")
         # 显示回答
         content = result.get("content", "") if isinstance(result, dict) else str(result)
         self.result_text.insert(tk.END, content)
         self.result_text.configure(state=tk.DISABLED)
         self.send_btn.config(state=tk.NORMAL, text="🚀 智能问答")
         self.status.config(text=f"✅ 完成 (路由: {provider} / {model})")
+        # 记录历史与统计
+        ts = time.strftime("%H:%M:%S")
+        self.history.insert(0, (ts, q[:40], f"{provider}/{model}", tier))
+        self.history = self.history[:50]
+        self.stats["total"] += 1
+        if tier == "free":
+            self.stats["free"] += 1
+        elif tier == "paid":
+            self.stats["paid"] += 1
+
+    def _analyze_route(self):
+        q = self.question_text.get("1.0", tk.END).strip()
+        if not q:
+            messagebox.showwarning("提示", "请输入问题！")
+            return
+        if not ROUTER_OK:
+            messagebox.showerror("初始化失败", f"路由核心加载失败:\n{_import_err}")
+            return
+
+        def work():
+            try:
+                # 零成本分析: 任务分类 + 完整候选链
+                analysis = analyze_task(q, content_len=len(q))
+                level = analysis.get("level", "?")
+                level_desc = analysis.get("level_desc", "")
+                primary = analysis.get("primary", {})
+                candidates = analysis.get("candidates", [])
+                lines = [f"🧭 路由级别: [{level}] {level_desc}\n",
+                         f"🎯 首选: {primary.get('provider')} / {primary.get('model')} "
+                         f"({primary.get('tier')})\n",
+                         "\n📋 完整候选链（免费优先→付费兜底）:"]
+                for i, c in enumerate(candidates, 1):
+                    tag = "FREE" if c.get("tier") == "free" else "PAID"
+                    lines.append(f"  {i}. [{tag}] {c.get('provider')}/{c.get('model')}")
+                lines.append("\n💡 点击「智能问答」按此链自动调用（失败自动回退）")
+                self.root.after(0, lambda: self._show_plain("\n".join(lines)))
+                self.root.after(0, lambda: self.status.config(
+                    text=f"🧭 分析完成: 级别={level} 候选={len(candidates)}个"))
+            except Exception as e:
+                self.root.after(0, lambda: self._show_error(str(e)))
+        threading.Thread(target=work, daemon=True).start()
+
+    def _show_plain(self, text):
+        self.result_text.configure(state=tk.NORMAL)
+        self.result_text.delete("1.0", tk.END)
+        self.result_text.insert(tk.END, text, "route")
+        self.result_text.configure(state=tk.DISABLED)
+
+    def _show_stats(self):
+        lines = [f"📊 路由统计\n\n总计调用: {self.stats['total']} 次",
+                 f"✅ 免费调用: {self.stats['free']} 次",
+                 f"⚠️ 付费调用: {self.stats['paid']} 次",
+                 f"💚 免费率: {self.stats['free']/max(self.stats['total'],1)*100:.0f}%\n",
+                 "🕐 最近历史:"]
+        for ts, q, route, tier in self.history[:10]:
+            tag = "🟢" if tier == "free" else "🟠"
+            lines.append(f"  {tag} {ts} {route} | {q}")
+        self._show_plain("\n".join(lines))
 
     def _show_error(self, msg):
         self.result_text.configure(state=tk.NORMAL)
