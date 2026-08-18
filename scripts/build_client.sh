@@ -24,6 +24,13 @@ python -c "import pywebview" 2>/dev/null || pip install pywebview
 python -c "import PyInstaller" 2>/dev/null || pip install pyinstaller
 python -c "import fastapi, uvicorn" 2>/dev/null || pip install fastapi uvicorn
 
+# --add-data 分隔符: Windows 用 ';'，Unix 用 ':'
+if [ "$PLATFORM" = "windows" ]; then
+  SEP=";"
+else
+  SEP=":"
+fi
+
 # 打包：desktop/web 前端 + 核心引擎 router_core
 python -m PyInstaller --noconfirm --onefile --windowed --name "$APP_NAME" \
   --collect-all pywebview \
@@ -32,9 +39,9 @@ python -m PyInstaller --noconfirm --onefile --windowed --name "$APP_NAME" \
   --hidden-import uvicorn.protocols.http.auto \
   --hidden-import uvicorn.protocols.websockets.auto \
   --hidden-import uvicorn.lifespan.on \
-  --add-data "desktop/web:web" \
-  --add-data "router_core.py:." \
-  --add-data "config.example.json:." \
+  --add-data "desktop/web${SEP}web" \
+  --add-data "router_core.py${SEP}." \
+  --add-data "config.example.json${SEP}." \
   "$ENTRY"
 
 case "$PLATFORM" in
@@ -47,17 +54,9 @@ case "$PLATFORM" in
     echo "✅ macOS 安装包: dist/$APP_NAME-macOS.app"
     ;;
   linux)
-    APPTOOL="appimagetool-x86_64.AppImage"
-    if [ ! -f "$APPTOOL" ]; then
-      wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/$APPTOOL" || true
-      chmod +x "$APPTOOL" 2>/dev/null || true
-    fi
-    if [ -x "$APPTOOL" ]; then
-      ./"$APPTOOL" "dist/$APP_NAME/" "dist/$APP_NAME-Linux-x86_64.AppImage"
-      echo "✅ Linux 安装包: dist/$APP_NAME-Linux-x86_64.AppImage"
-    else
-      echo "⚠️ appimagetool 不可用,已保留 AppDir"
-    fi
+    mv -f "dist/$APP_NAME" "dist/$APP_NAME-Linux-x86_64.AppImage" 2>/dev/null \
+      || mv -f "dist/$APP_NAME.exe" "dist/$APP_NAME-Linux-x86_64.AppImage"
+    echo "✅ Linux 安装包: dist/$APP_NAME-Linux-x86_64.AppImage"
     ;;
 esac
 echo "📤 上传: gh release upload <tag> dist/*"
